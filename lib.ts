@@ -23,6 +23,12 @@ function S<X,Y,Z>(x: (z: Z) => (y: Y) => X): (y: (z: Z)=> Y) => (z: Z) => X {
     return y => z => x(z)(y(z));
 }
 
+// y combinator //////////////////////////////////////////////////////////////////
+
+function y(r){
+    return (f => f(f)) (f => (r (x => ((f (f)) (x) ))));
+}
+
 // Unit ////////////////////////////////////////////////////////////
 
 interface Unit {
@@ -39,20 +45,21 @@ function bottom<T,S>(t: T): S {
 
 // Tuple /////////////////////////////////////
 
-interface Tuple<F,S> {
-    <T>(t: (fst: F)=>(snd: S)=>T): T;    
+
+interface Tuple<T,S> {
+    <U>(h: (a: T)=>(b: S)=>U): U;    
 }
 
-function tuple<F,S>(f: F): (s: S) => Tuple<F,S> {
-    return s=>t=>t(f)(s);
+function tuple<T,S,U>(x: T): (y: S) => Tuple<T,S> {
+    return y => h => h(x)(y);
 }
 
-function fst<F,S>(t: Tuple<F,S>): F {
-    return t(f=>s=>f);
+function fst<T,S>(t: Tuple<T,S>): T {
+    return t($true);
 }
 
-function snd<F,S>(t: Tuple<F,S>): F {
-    return t(f=>s=>s);
+function snd<T,S>(t: Tuple<T,S>): S {
+    return t($false);
 }
 
 // Either ////////////////////////////////////
@@ -267,6 +274,10 @@ function d5(v: Natural): (w: Natural) => (x: Natural) => (y: Natural) => (z: Nat
 // Text = List<Natural> = Either<Unit,Tuple<Natural,List<Natural>>>
 interface Str {
     (b: (l: Unit)=>Natural): (c: (r: List<Natural>)=>Natural) => Natural; 
+}
+
+function char(x: Natural): (y: Natural) => (z: Natural) => List<Natural> {
+    return y => z => box(d3(x)(y)(z));
 }
 
 function showBoolean(x: Bool): Str {

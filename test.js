@@ -32,6 +32,17 @@ function S(x) {
     };
 }
 
+// y combinator //////////////////////////////////////////////////////////////////
+function y(r) {
+    return (function (f) {
+        return f(f);
+    })(function (f) {
+        return (r(function (x) {
+            return ((f(f))(x));
+        }));
+    });
+}
+
 function unit(t) {
     return t;
 }
@@ -40,28 +51,20 @@ function bottom(t) {
     return bottom(t);
 }
 
-function tuple(f) {
-    return function (s) {
-        return function (t) {
-            return t(f)(s);
+function tuple(x) {
+    return function (y) {
+        return function (h) {
+            return h(x)(y);
         };
     };
 }
 
 function fst(t) {
-    return t(function (f) {
-        return function (s) {
-            return f;
-        };
-    });
+    return t($true);
 }
 
 function snd(t) {
-    return t(function (f) {
-        return function (s) {
-            return s;
-        };
-    });
+    return t($false);
 }
 
 function left(x) {
@@ -452,6 +455,14 @@ function d5(v) {
     };
 }
 
+function char(x) {
+    return function (y) {
+        return function (z) {
+            return box(d3(x)(y)(z));
+        };
+    };
+}
+
 function showBoolean(x) {
     return $if(x)(Const(cons(d3(_1)(_1)(_6))(cons(d3(_1)(_1)(_4))(cons(d3(_1)(_1)(_7))(cons(d3(_1)(_0)(_1))(nil))))))(Const(cons(d3(_1)(_0)(_2))(cons(d3(_0)(_9)(_7))(cons(d3(_1)(_0)(_8))(cons(d3(_1)(_1)(_5))(cons(d3(_1)(_0)(_1))(nil)))))));
 }
@@ -574,6 +585,7 @@ function assert(name, ref, expr) {
 }
 
 // Test /////////////////////////////////////////////////////////////////////////////////////////////
+// boolean
 assert("not true", "false", showBoolean(not($true)));
 assert("not false", "true", showBoolean(not($false)));
 assert("true and true", "true", showBoolean(and($true)($true)));
@@ -584,21 +596,22 @@ assert("true or true", "true", showBoolean(or($true)($true)));
 assert("true or false", "true", showBoolean(or($true)($false)));
 assert("false or true", "true", showBoolean(or($false)($true)));
 assert("false or false", "false", showBoolean(or($false)($false)));
-
 assert("true then true", "true", showBoolean(then($true)($true)));
 assert("true then false", "false", showBoolean(then($true)($false)));
 assert("false then true", "true", showBoolean(then($false)($true)));
 assert("false then false", "true", showBoolean(then($false)($false)));
-
 assert("true iff true", "true", showBoolean(iff($true)($true)));
 assert("true iff false", "false", showBoolean(iff($true)($false)));
 assert("false iff true", "false", showBoolean(iff($false)($true)));
 assert("false iff false", "true", showBoolean(iff($false)($false)));
-
 assert("true xor true", "false", showBoolean(xor($true)($true)));
 assert("true xor false", "true", showBoolean(xor($true)($false)));
 assert("false xor true", "true", showBoolean(xor($false)($true)));
 assert("false xor false", "false", showBoolean(xor($false)($false)));
+
+// tuple
+assert("fst(tuple(_3)(_5))", "3", showNum(fst(tuple(_3)(_5))));
+assert("snd(tuple(_3)(_5))", "5", showNum(snd(tuple(_3)(_5))));
 
 assert("isZero 0", "true", showBoolean(isZero(_0)));
 assert("isZero 1", "false", showBoolean(isZero(_1)));
@@ -645,12 +658,19 @@ assert("unfoldr", "[9,8,7,6,5,4,3,2,1,]", showList(showNum)(unfoldr(function (x)
 
 assert("Hello,World", "Hello,world!", cons(d3(_0)(_7)(_2))(cons(d3(_1)(_0)(_1))(cons(d3(_1)(_0)(_8))(cons(d3(_1)(_0)(_8))(cons(d3(_1)(_1)(_1))(cons(d3(_0)(_4)(_4))(cons(d3(_1)(_1)(_9))(cons(d3(_1)(_1)(_1))(cons(d3(_1)(_1)(_4))(cons(d3(_1)(_0)(_8))(cons(d3(_1)(_0)(_0))(cons(d3(_0)(_3)(_3))(nil)))))))))))));
 
+var fact = function (f) {
+    return function (n) {
+        return (n == 0) ? 1 : n * f(n - 1);
+    };
+};
+console.log("y factorial 10: " + y(fact)(10));
+
 console.log("Echo: ");
 interactive(unit, "Hello,World");
 
 console.log("Caesar cipher:");
 interactive(function (x) {
-    return concat6(x)(box(d2(_3)(_2)))(box(d2(_6)(_1)))(box(d2(_6)(_2)))(box(d2(_3)(_2)))(map(succ)(x));
+    return concat6(x)(char(_0)(_3)(_2))(char(_0)(_6)(_1))(char(_0)(_6)(_2))(char(_0)(_3)(_2))(map(succ)(x));
 }, "Hello,World");
 
 function f(x) {
@@ -658,3 +678,8 @@ function f(x) {
         return y;
     };
 }
+
+var c = $false;
+
+console.log(c(10)(20));// c ? 10 : 20 と考える。20が出力される
+
