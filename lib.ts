@@ -80,22 +80,31 @@ interface Bool {
     <T>(t: T): (f: T) => T;
 }
 
-function True<T>(f: T): (t: T) => T {
+function $true<T,S>(f: T): (t: S) => T {
     return (t: T) => f;
 }
-function False<T>(f: T): (t: T) => T {
+function $false<T,S>(f: T): (t: S) => S {
     return (t: T) => t;
 }
 function not(x: Bool): Bool {
-    return x(True)(False);
+    return x($false)($true);
 }
 function and(x: Bool): (y: Bool) => Bool {
-    return y => y(x(True)(False))(False);
+    return y => y(x($true)($false))($false);
 }
 function or(x: Bool): (y: Bool) => Bool {
-    return y => y(True)(x(True)(False));
+    return y => y($true)(x($true)($false));
 }
-function If<T>(condition: Bool) : (_then: (u: Unit)=>T) => (_else: (u: Unit)=>T) => T {
+function then(x: Bool): (y: Bool) => Bool {
+    return y => or(not(x))(y);
+}
+function iff(x: Bool): (y: Bool) => Bool {
+    return y => and(then(x)(y))(then(y)(x));
+}
+function xor(x: Bool): (y: Bool) => Bool {
+    return y => not(iff(x)(y));
+}
+function $if<T>(condition: Bool) : (_then: (u: Unit)=>T) => (_else: (u: Unit)=>T) => T {
     return _then => _else => condition(_then)(_else)(unit);
 }
 
@@ -136,13 +145,13 @@ function tail<T>(xs: List<T>): List<T> {
     return either(xs)(bottom)(r => snd(r));
 }
 function isNil<T>(xs: List<T>): Bool {
-    return either(xs)(l=>True)(r => False);
+    return either(xs)(l=>$true)(r => $false);
 }
 function map<T,S>(f: (t: T)=>S): (xs: List<T>) => List<S> {
-    return xs => If(isNil(xs))((_)=>nil)((_)=>cons(f(head(xs)))(map(f)(tail(xs))));
+    return xs => $if(isNil(xs))((_)=>nil)((_)=>cons(f(head(xs)))(map(f)(tail(xs))));
 }
 function foldl<T,S>(f: (s: S) => (t: T)=>S): (s: S) => (xs: List<T>) => S {
-    return s => xs => If(isNil(xs))((_)=>s)((_)=>foldl(f)(f(s)(head(xs)))(tail(xs)));
+    return s => xs => $if(isNil(xs))((_)=>s)((_)=>foldl(f)(f(s)(head(xs)))(tail(xs)));
 }
 function unfoldr<T,S>(f: (s: S) => Maybe<Tuple<T,S>>): (s: S) => List<T> {
     return s=>maybe(f(s))((_)=>nil)(t=>cons(fst(t))(unfoldr(f)(snd(t))));
@@ -171,6 +180,8 @@ function concat5<T>(xs: List<T>): (ks: List<T>) => (ws: List<T>) => (ys: List<T>
 function concat6<T>(vs: List<T>): (xs: List<T>) => (ks: List<T>) => (ws: List<T>) => (ys: List<T>) =>(zs: List<T>) =>  List<T> {
     return xs => ks => ws => ys => zs => concat(vs)( concat5 (xs) (ks) (ws) (ys) (zs) );
 }
+
+
 
 // Tree ///////////////////////////////////////////////////////////////////////////////
 
@@ -204,7 +215,7 @@ function succ<T>(n: Natural): Natural {
 }
 
 function isZero(n: Natural): Bool {
-    return n(_=>False)(True);
+    return n(_=>$false)($true);
 }
 
 function pred(n: Natural): Natural {
@@ -259,7 +270,7 @@ interface Str {
 }
 
 function showBoolean(x: Bool): Str {
-    return If(x)(Const(
+    return $if(x)(Const(
             cons( d3(_1)(_1)(_6) )( // t
             cons( d3(_1)(_1)(_4) )( // r
             cons( d3(_1)(_1)(_7) )( // u
@@ -313,14 +324,6 @@ function showTree<T>(show: (x: T)=>Str): (xs: Tree<T>) => Str {
     return xs => either(xs)(b=>show(b))(r=> concat5 (box(d3(_0)(_6)(_0))) (showTree(show)(fst(r))) (box(d3(_0)(_4)(_4))) (showTree(show)(snd(r))) (box(d3(_0)(_6)(_2))) );
 }
 
-
-// Monoid /////////////////////////////////////////////////////////////////////////////
-
-interface Monoid<M> {
-    <T>(t: (mempty: M)=>(mappend: (m: M)=>(n:M)=>M)=>T): T;   
-}
-
-
 // encode/decode /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 function decode<S>(empty: S): (append: (s: S) => (t: S) => S) => (toNumber: (n: Natural) => S) => (y: List<Natural>) => S {
@@ -328,7 +331,7 @@ function decode<S>(empty: S): (append: (s: S) => (t: S) => S) => (toNumber: (n: 
 }
 
 function encode<S,N>(read: (i: N)=>Natural): (size: Natural) => List<Natural> {
-    return size => unfoldr(i=>If 
+    return size => unfoldr(i=>$if 
         (isZero( sub(size)(i) )) 
         (_=> nothing)
         (_=> just(tuple(   read(i)   )(succ(i))) )

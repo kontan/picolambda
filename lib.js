@@ -88,30 +88,45 @@ function either(e) {
     };
 }
 
-function True(f) {
+function $true(f) {
     return function (t) {
         return f;
     };
 }
-function False(f) {
+function $false(f) {
     return function (t) {
         return t;
     };
 }
 function not(x) {
-    return x(True)(False);
+    return x($false)($true);
 }
 function and(x) {
     return function (y) {
-        return y(x(True)(False))(False);
+        return y(x($true)($false))($false);
     };
 }
 function or(x) {
     return function (y) {
-        return y(True)(x(True)(False));
+        return y($true)(x($true)($false));
     };
 }
-function If(condition) {
+function then(x) {
+    return function (y) {
+        return or(not(x))(y);
+    };
+}
+function iff(x) {
+    return function (y) {
+        return and(then(x)(y))(then(y)(x));
+    };
+}
+function xor(x) {
+    return function (y) {
+        return not(iff(x)(y));
+    };
+}
+function $if(condition) {
     return function (_then) {
         return function (_else) {
             return condition(_then)(_else)(unit);
@@ -163,14 +178,14 @@ function tail(xs) {
 }
 function isNil(xs) {
     return either(xs)(function (l) {
-        return True;
+        return $true;
     })(function (r) {
-        return False;
+        return $false;
     });
 }
 function map(f) {
     return function (xs) {
-        return If(isNil(xs))(function (_) {
+        return $if(isNil(xs))(function (_) {
             return nil;
         })(function (_) {
             return cons(f(head(xs)))(map(f)(tail(xs)));
@@ -180,7 +195,7 @@ function map(f) {
 function foldl(f) {
     return function (s) {
         return function (xs) {
-            return If(isNil(xs))(function (_) {
+            return $if(isNil(xs))(function (_) {
                 return s;
             })(function (_) {
                 return foldl(f)(f(s)(head(xs)))(tail(xs));
@@ -286,8 +301,8 @@ function succ(n) {
 
 function isZero(n) {
     return n(function (_) {
-        return False;
-    })(True);
+        return $false;
+    })($true);
 }
 
 function pred(n) {
@@ -438,7 +453,7 @@ function d5(v) {
 }
 
 function showBoolean(x) {
-    return If(x)(Const(cons(d3(_1)(_1)(_6))(cons(d3(_1)(_1)(_4))(cons(d3(_1)(_1)(_7))(cons(d3(_1)(_0)(_1))(nil))))))(Const(cons(d3(_1)(_0)(_2))(cons(d3(_0)(_9)(_7))(cons(d3(_1)(_0)(_8))(cons(d3(_1)(_1)(_5))(cons(d3(_1)(_0)(_1))(nil)))))));
+    return $if(x)(Const(cons(d3(_1)(_1)(_6))(cons(d3(_1)(_1)(_4))(cons(d3(_1)(_1)(_7))(cons(d3(_1)(_0)(_1))(nil))))))(Const(cons(d3(_1)(_0)(_2))(cons(d3(_0)(_9)(_7))(cons(d3(_1)(_0)(_8))(cons(d3(_1)(_1)(_5))(cons(d3(_1)(_0)(_1))(nil)))))));
 }
 
 function showList(show) {
@@ -511,7 +526,7 @@ function decode(empty) {
 function encode(read) {
     return function (size) {
         return unfoldr(function (i) {
-            return If(isZero(sub(size)(i)))(function (_) {
+            return $if(isZero(sub(size)(i)))(function (_) {
                 return nothing;
             })(function (_) {
                 return just(tuple(read(i))(succ(i)));
