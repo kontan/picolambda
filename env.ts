@@ -1,7 +1,7 @@
 
 
 
-function interactive(f: (input: List<Natural>)=>List<Natural>, x: string): void {
+function interactive(f: (s: Str)=>Str, x: string): void {
     function church(n: number): Natural {
         return f => x => n ? church (n-1) (f) (f(x)) : x;
     }

@@ -8,6 +8,8 @@ function assert(name: string, ref: string, expr: any){
 
 // Test /////////////////////////////////////////////////////////////////////////////////////////////
 
+
+// boolean
 assert("not true",         "false",              showBoolean(     not($true)                                     ));
 assert("not false",         "true",              showBoolean(     not($false)                                     ));
 assert("true and true",     "true",              showBoolean(     and($true)($true)                                     ));
@@ -18,24 +20,22 @@ assert("true or true",     "true",               showBoolean(     or($true)($tru
 assert("true or false",    "true",               showBoolean(     or($true)($false)                                     ));
 assert("false or true",     "true",              showBoolean(     or($false)($true)                                     ));
 assert("false or false",    "false",             showBoolean(     or($false)($false)                                     ));
-
 assert("true then true",     "true",               showBoolean(     then($true)($true)                                     ));
 assert("true then false",    "false",              showBoolean(     then($true)($false)                                     ));
 assert("false then true",     "true",             showBoolean(     then($false)($true)                                     ));
 assert("false then false",    "true",              showBoolean(     then($false)($false)                                     ));
-
 assert("true iff true",     "true",               showBoolean(     iff($true)($true)                                     ));
 assert("true iff false",    "false",              showBoolean(     iff($true)($false)                                     ));
 assert("false iff true",     "false",             showBoolean(     iff($false)($true)                                     ));
 assert("false iff false",    "true",              showBoolean(     iff($false)($false)                                     ));
-
-
 assert("true xor true",     "false",               showBoolean(     xor($true)($true)                                     ));
 assert("true xor false",    "true",              showBoolean(     xor($true)($false)                                     ));
 assert("false xor true",     "true",             showBoolean(     xor($false)($true)                                     ));
 assert("false xor false",    "false",              showBoolean(     xor($false)($false)                                     ));
 
-
+// tuple
+assert("fst(tuple(_3)(_5))",    "3",              showNum(     fst(tuple(_3)(_5))                                     ));
+assert("snd(tuple(_3)(_5))",    "5",              showNum(     snd(tuple(_3)(_5))                                     ));
 
 
 assert("isZero 0",         "true",              showBoolean(     isZero(_0)                                     ));
@@ -93,6 +93,8 @@ assert("Hello,World", "Hello,world!",
     )))))))))))
 ));
 
+var fact = f=> n => (n == 0) ? 1 : n * f (n-1);
+console.log("y factorial 10: " + y(fact)(10));
 
 console.log("Echo: ");
 interactive(unit, "Hello,World");
@@ -100,23 +102,15 @@ interactive(unit, "Hello,World");
 
 console.log("Caesar cipher:");
 interactive(x=>concat6 
-    (x)               // plain text
-    (box(d2(_3)(_2))) // " "
-    (box(d2(_6)(_1))) // "="
-    (box(d2(_6)(_2))) // ">"
-    (box(d2(_3)(_2))) // " "
-    (map(succ)(x))    // encrypted text
+    (x)                     // plain text
+    (char(_0)(_3)(_2))      // " "
+    (char(_0)(_6)(_1))      // "="
+    (char(_0)(_6)(_2))      // ">"
+    (char(_0)(_3)(_2))      // " "
+    (map(succ)(x))          // encrypted text
 , "Hello,World");
 
 
 
-
-
-
-function f<T,S>(x: T): (y: S)=>S {
-    return function(y: S): S {
-        return y ;
-    };
-}
 
 
