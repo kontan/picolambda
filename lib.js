@@ -7,14 +7,11 @@ function combine(f) {
     };
 }
 
+// Equivalents: $true
 function $const(a) {
     return function (b) {
         return a;
     };
-}
-
-function $sqr(x) {
-    return x(x);
 }
 
 // SKI Combinator /////////////////////////////////////////////////////////////////
@@ -51,14 +48,19 @@ function unit(t) {
     return t;
 }
 
+// bottom //////////////////////////////////////////////////////////////////////
 function bottom(t) {
     return bottom(t);
 }
 
-function tuple(x) {
-    return function (y) {
-        return function (h) {
-            return h(x)(y);
+function $sqr(x) {
+    return x(x);
+}
+
+function tuple(a) {
+    return function (b) {
+        return function (f) {
+            return f(a)(b);
         };
     };
 }
@@ -88,18 +90,16 @@ function right(x) {
 }
 
 function either(e) {
-    return function (l) {
-        return function (r) {
-            return e(l)(r);
-        };
-    };
+    return e;
 }
 
+// Equivalents: const
 function $true(f) {
     return function (t) {
         return f;
     };
 }
+
 function $false(f) {
     return function (t) {
         return t;
@@ -133,7 +133,14 @@ function xor(x) {
         return not(iff(x)(y));
     };
 }
+
 function $if(condition) {
+    return condition;
+}
+function unless(condition) {
+    return not(condition);
+}
+function lif(condition) {
     return function (_then) {
         return function (_else) {
             return condition(_then)(_else)(unit);
@@ -184,7 +191,7 @@ function isNil(xs) {
 }
 function map(f) {
     return function (xs) {
-        return $if(isNil(xs))($const(nil))(function (_) {
+        return lif(isNil(xs))($const(nil))(function (_) {
             return cons(f(head(xs)))(map(f)(tail(xs)));
         });
     };
@@ -192,7 +199,7 @@ function map(f) {
 function foldl(f) {
     return function (s) {
         return function (xs) {
-            return $if(isNil(xs))($const(s))(function (_) {
+            return lif(isNil(xs))($const(s))(function (_) {
                 return foldl(f)(f(s)(head(xs)))(tail(xs));
             });
         };
@@ -229,42 +236,37 @@ function box(t) {
 }
 function concat3(xs) {
     return function (ys) {
-        return function (zs) {
-            return concat(xs)(concat(ys)(zs));
-        };
+        return concat(concat(xs)(ys));
     };
 }
 function concat4(xs) {
     return function (ws) {
-        return function (ys) {
-            return function (zs) {
-                return concat(xs)(concat3(ws)(ys)(zs));
-            };
-        };
+        return concat3(concat(xs)(ws));
     };
 }
 function concat5(xs) {
     return function (ks) {
-        return function (ws) {
-            return function (ys) {
-                return function (zs) {
-                    return concat(xs)(concat4(ks)(ws)(ys)(zs));
-                };
-            };
-        };
+        return concat4(concat(xs)(ks));
     };
 }
 function concat6(vs) {
     return function (xs) {
-        return function (ks) {
-            return function (ws) {
-                return function (ys) {
-                    return function (zs) {
-                        return concat(vs)(concat5(xs)(ks)(ws)(ys)(zs));
-                    };
-                };
-            };
-        };
+        return concat5(concat(vs)(xs));
+    };
+}
+function concat7(xs) {
+    return function (ys) {
+        return concat6(concat(xs)(ys));
+    };
+}
+function concat8(xs) {
+    return function (ws) {
+        return concat7(concat(xs)(ws));
+    };
+}
+function concat9(xs) {
+    return function (ks) {
+        return concat8(concat(xs)(ks));
     };
 }
 
@@ -450,7 +452,7 @@ function char(x) {
 }
 
 function showBoolean(x) {
-    return $if(x)($const(concat4(char(_1)(_1)(_6))(char(_1)(_1)(_4))(char(_1)(_1)(_7))(char(_1)(_0)(_1))))($const(concat5(char(_1)(_0)(_2))(char(_0)(_9)(_7))(char(_1)(_0)(_8))(char(_1)(_1)(_5))(char(_1)(_0)(_1))));
+    return lif(x)($const(concat4(char(_1)(_1)(_6))(char(_1)(_1)(_4))(char(_1)(_1)(_7))(char(_1)(_0)(_1))))($const(concat5(char(_1)(_0)(_2))(char(_0)(_9)(_7))(char(_1)(_0)(_8))(char(_1)(_1)(_5))(char(_1)(_0)(_1))));
 }
 
 function showList(show) {
@@ -521,7 +523,7 @@ function decode(empty) {
 function encode(read) {
     return function (size) {
         return unfoldr(function (i) {
-            return $if(isZero(sub(size)(i)))(function (_) {
+            return lif(isZero(sub(size)(i)))(function (_) {
                 return nothing;
             })(function (_) {
                 return just(tuple(read(i))(succ(i)));

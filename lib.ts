@@ -4,18 +4,9 @@ function combine<A,B,C>(f: (a: A)=>B): (g: (b: B)=>C) => (a: A) => C {
     return (g: (b: B)=>C) => (a: A) => g(f(a));
 }
 
+// Equivalents: $true
 function $const<A,B>(a: A): (b: B) => A {
     return b=>a;
-}
-
-// square ////////////////////////////////////////////////////////////////////////
-
-interface Sqr {
-    <S>(x: Sqr): S;
-}
-
-function $sqr<S>(x: Sqr): S {
-    return x(x);
 }
 
 // SKI Combinator /////////////////////////////////////////////////////////////////
@@ -48,33 +39,43 @@ function unit<T>(t: T): T {
     return t;
 }
 
+// bottom //////////////////////////////////////////////////////////////////////
+
 function bottom<T,S>(t: T): S {
     return bottom(t);
+}
+
+interface Sqr {
+    <S>(x: Sqr): S;
+}
+
+function $sqr<S>(x: Sqr): S {
+    return x(x);
 }
 
 // Tuple /////////////////////////////////////
 
 
-interface Tuple<T,S> {
-    <U>(h: (a: T)=>(b: S)=>U): U;    
+interface Tuple<A,B> {
+    <T>(h: (a: A)=>(b: B)=>T): T;    
 }
 
-function tuple<T,S,U>(x: T): (y: S) => Tuple<T,S> {
-    return y=>h=>h(x)(y);
+function tuple<A,B,T>(a: A): (b: B) => Tuple<A,B> {
+    return b=>f=>f(a)(b);
 }
 
-function fst<T,S>(t: Tuple<T,S>): T {
+function fst<A,B>(t: Tuple<A,B>): A {
     return t($true);
 }
 
-function snd<T,S>(t: Tuple<T,S>): S {
+function snd<A,B>(t: Tuple<A,B>): B {
     return t($false);
 }
 
 // Either ////////////////////////////////////
 
-interface Either<L,R> {
-    <T>(l: (l: L)=>T): (r: (r: R)=>T) => T; 
+interface Either<A,B> {
+    <T>(l: (a: A)=>T): (r: (b: B)=>T) => T; 
 }
 
 function left<L,R>(x: L): Either<L,R> {
@@ -86,7 +87,7 @@ function right<L,R>(x: R): Either<L,R> {
 }
 
 function either<L,R,T>(e: Either<L,R>): (l: (l: L)=>T) => (r: (r: R)=>T) => T {
-    return (l: (l: L)=>T)=>(r: (r: R)=>T)=>e(l)(r);
+    return e;
 }
 
 
@@ -96,9 +97,11 @@ interface Bool {
     <T>(t: T): (f: T) => T;
 }
 
+// Equivalents: const
 function $true<T,S>(f: T): (t: S) => T {
     return t=>f;
 }
+
 function $false<T,S>(f: T): (t: S) => S {
     return t=>t;
 }
@@ -120,7 +123,14 @@ function iff(x: Bool): (y: Bool) => Bool {
 function xor(x: Bool): (y: Bool) => Bool {
     return y => not(iff(x)(y));
 }
-function $if<T>(condition: Bool) : (_then: (u: Unit)=>T) => (_else: (u: Unit)=>T) => T {
+
+function $if<T>(condition: Bool) : (_then: T) => (_else: T) => T {
+    return condition;
+}
+function unless<T>(condition: Bool) : (_then: T) => (_else: T) => T {
+    return not(condition);
+}
+function lif<T>(condition: Bool) : (_then: (u: Unit)=>T) => (_else: (u: Unit)=>T) => T {
     return (_then: (u: Unit)=>T) => (_else: (u: Unit)=>T) => condition(_then)(_else)(unit);
 }
 
@@ -164,10 +174,10 @@ function isNil<T>(xs: List<T>): Bool {
     return maybe(xs)($const($true))($const($false));
 }
 function map<T,S>(f: (t: T)=>S): (xs: List<T>) => List<S> {
-    return (xs: List<T>) => $if(isNil(xs))($const(nil))(_=>cons(f(head(xs)))(map(f)(tail(xs))));
+    return (xs: List<T>) => lif(isNil(xs))($const(nil))(_=>cons(f(head(xs)))(map(f)(tail(xs))));
 }
 function foldl<T,S>(f: (s: S) => (t: T)=>S): (s: S) => (xs: List<T>) => S {
-    return (s: S) => (xs: List<T>) => $if(isNil(xs))($const(s))(_=>foldl(f)(f(s)(head(xs)))(tail(xs)));
+    return (s: S) => (xs: List<T>) => lif(isNil(xs))($const(s))(_=>foldl(f)(f(s)(head(xs)))(tail(xs)));
 }
 function unfoldr<T,S>(f: (s: S) => Maybe<Tuple<T,S>>): (s: S) => List<T> {
     return (s: S) => maybe (f(s)) ($const(nil)) ((t: Tuple<T,S>)=>cons(fst(t))(unfoldr(f)(snd(t))))
@@ -184,18 +194,13 @@ function flatten<T>(xxs: List<List<T>>): List<T> {
 function box<T>(t : T): List<T> {
     return cons(t)(nil);
 }
-function concat3<T>(xs: List<T>): (ys: List<T>) =>(zs: List<T>) =>  List<T> {
-    return (ys: List<T>) => (zs: List<T>) => concat(xs)(concat(ys)(zs));
-}
-function concat4<T>(xs: List<T>): (ws: List<T>) => (ys: List<T>) =>(zs: List<T>) =>  List<T> {
-    return (ws: List<T>) => (ys: List<T>) =>(zs: List<T>) =>concat(xs)(concat3 (ws) (ys) (zs));
-}
-function concat5<T>(xs: List<T>): (ks: List<T>) => (ws: List<T>) => (ys: List<T>) =>(zs: List<T>) =>  List<T> {
-    return (ks: List<T>) => (ws: List<T>) => (ys: List<T>) =>(zs: List<T>) => concat(xs)(concat4 (ks) (ws) (ys) (zs));
-}
-function concat6<T>(vs: List<T>): (xs: List<T>) => (ks: List<T>) => (ws: List<T>) => (ys: List<T>) =>(zs: List<T>) =>  List<T> {
-    return (xs: List<T>) => (ks: List<T>) => (ws: List<T>) => (ys: List<T>) =>(zs: List<T>) => concat(vs)( concat5 (xs) (ks) (ws) (ys) (zs) );
-}
+function concat3<T>(xs: List<T>): typeof concat  { return ys => concat  (concat(xs)(ys)) }
+function concat4<T>(xs: List<T>): typeof concat3 { return ys => concat3 (concat(xs)(ys)) }
+function concat5<T>(xs: List<T>): typeof concat4 { return ys => concat4 (concat(xs)(ys)) }
+function concat6<T>(xs: List<T>): typeof concat5 { return ys => concat5 (concat(xs)(ys)) }
+function concat7<T>(xs: List<T>): typeof concat6 { return ys => concat6 (concat(xs)(ys)) }
+function concat8<T>(xs: List<T>): typeof concat7 { return ys => concat7 (concat(xs)(ys)) }
+function concat9<T>(xs: List<T>): typeof concat8 { return ys => concat8 (concat(xs)(ys)) }
 
 
 
@@ -299,7 +304,7 @@ function char(x: Char): Str {
 }
 
 function showBoolean(x: Bool): Str {
-    return $if(x)($const(concat4
+    return lif(x)($const(concat4
             (char(_1)(_1)(_6)) // t
             (char(_1)(_1)(_4)) // r
             (char(_1)(_1)(_7)) // u
@@ -350,7 +355,7 @@ function decode<S>(empty: S): (append: (s: S) => (t: S) => S) => (reader: (n: Na
 }
 
 function encode(read: (i: Natural)=>Natural): (size: Natural) => List<Natural> {
-    return (size: Natural) => unfoldr( (i:Natural) => $if 
+    return (size: Natural) => unfoldr( (i:Natural) => lif 
         (isZero( sub(size)(i) )) 
         (_=> nothing)
         (_=> just(tuple(   read(i)   )(succ(i))) )
