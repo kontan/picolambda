@@ -7,10 +7,14 @@ function combine(f) {
     };
 }
 
-function Const(a) {
+function $const(a) {
     return function (b) {
         return a;
     };
+}
+
+function $sqr(x) {
+    return x(x);
 }
 
 // SKI Combinator /////////////////////////////////////////////////////////////////
@@ -37,9 +41,9 @@ function y(r) {
     return (function (f) {
         return f(f);
     })(function (f) {
-        return (r(function (x) {
-            return ((f(f))(x));
-        }));
+        return r(function (x) {
+            return f(f)(x);
+        });
     });
 }
 
@@ -84,9 +88,9 @@ function right(x) {
 }
 
 function either(e) {
-    return function (left) {
-        return function (right) {
-            return e(left)(right);
+    return function (l) {
+        return function (r) {
+            return e(l)(r);
         };
     };
 }
@@ -137,9 +141,9 @@ function $if(condition) {
     };
 }
 
-function nothing(left) {
-    return function (right) {
-        return left(unit);
+function nothing(l) {
+    return function (r) {
+        return l(unit);
     };
 }
 
@@ -152,45 +156,35 @@ function just(x) {
 }
 
 function maybe(m) {
-    return function (left) {
-        return function (right) {
-            return m(left)(right);
+    return function (l) {
+        return function (r) {
+            return m(l)(r);
         };
     };
 }
 
 function nil(b) {
     return function (c) {
-        return b(unit);
+        return nothing(b)(c);
     };
 }
 function cons(x) {
     return function (xs) {
-        return right(tuple(x)(xs));
+        return just(tuple(x)(xs));
     };
 }
 function head(xs) {
-    return either(xs)(bottom)(function (r) {
-        return fst(r);
-    });
+    return maybe(xs)(bottom)(fst);
 }
 function tail(xs) {
-    return either(xs)(bottom)(function (r) {
-        return snd(r);
-    });
+    return maybe(xs)(bottom)(snd);
 }
 function isNil(xs) {
-    return either(xs)(function (l) {
-        return $true;
-    })(function (r) {
-        return $false;
-    });
+    return maybe(xs)($const($true))($const($false));
 }
 function map(f) {
     return function (xs) {
-        return $if(isNil(xs))(function (_) {
-            return nil;
-        })(function (_) {
+        return $if(isNil(xs))($const(nil))(function (_) {
             return cons(f(head(xs)))(map(f)(tail(xs)));
         });
     };
@@ -198,9 +192,7 @@ function map(f) {
 function foldl(f) {
     return function (s) {
         return function (xs) {
-            return $if(isNil(xs))(function (_) {
-                return s;
-            })(function (_) {
+            return $if(isNil(xs))($const(s))(function (_) {
                 return foldl(f)(f(s)(head(xs)))(tail(xs));
             });
         };
@@ -208,9 +200,7 @@ function foldl(f) {
 }
 function unfoldr(f) {
     return function (s) {
-        return maybe(f(s))(function (_) {
-            return nil;
-        })(function (t) {
+        return maybe(f(s))($const(nil))(function (t) {
             return cons(fst(t))(unfoldr(f)(snd(t)));
         });
     };
@@ -224,7 +214,7 @@ function len(xs) {
 }
 function concat(xs) {
     return function (ys) {
-        return either(xs)(function (_) {
+        return maybe(xs)(function (_) {
             return ys;
         })(function (c) {
             return cons(fst(c))(concat(snd(c))(ys));
@@ -349,6 +339,10 @@ function pow(m) {
     };
 }
 
+function sqr(m) {
+    return m(m);
+}
+
 function _0(f) {
     return function (t) {
         return t;
@@ -405,18 +399,9 @@ function _d(f) {
     };
 }
 
-function _256(_) {
-    return (function (n) {
-        return n(n);
-    })(function (n) {
-        return n(n);
-    })(function (f) {
-        return function (x) {
-            return f(f(x));
-        };
-    });
-}
-
+//function _256<T>(_: Unit): Natural {
+//    return (n => n(n)) (n => n(n)) ((f: (t: T)=>T) => (x: T) => f(f(x)));
+//}
 function d(n) {
     return function (m) {
         return add(mul(n)(_d))(m);
@@ -455,6 +440,7 @@ function d5(v) {
     };
 }
 
+// Confusing function name! Hmm...
 function char(x) {
     return function (y) {
         return function (z) {
@@ -464,26 +450,26 @@ function char(x) {
 }
 
 function showBoolean(x) {
-    return $if(x)(Const(cons(d3(_1)(_1)(_6))(cons(d3(_1)(_1)(_4))(cons(d3(_1)(_1)(_7))(cons(d3(_1)(_0)(_1))(nil))))))(Const(cons(d3(_1)(_0)(_2))(cons(d3(_0)(_9)(_7))(cons(d3(_1)(_0)(_8))(cons(d3(_1)(_1)(_5))(cons(d3(_1)(_0)(_1))(nil)))))));
+    return $if(x)($const(concat4(char(_1)(_1)(_6))(char(_1)(_1)(_4))(char(_1)(_1)(_7))(char(_1)(_0)(_1))))($const(concat5(char(_1)(_0)(_2))(char(_0)(_9)(_7))(char(_1)(_0)(_8))(char(_1)(_1)(_5))(char(_1)(_0)(_1))));
 }
 
 function showList(show) {
     return function (xs) {
-        return concat(cons(d3(_0)(_9)(_1))(foldl(function (x) {
+        return (concat3(char(_0)(_9)(_1))(foldl(function (x) {
             return function (y) {
-                return concat3(x)(show(y))(box(d3(_0)(_4)(_4)));
+                return concat3(x)(show(y))(char(_0)(_4)(_4));
             };
-        })(nil)(xs)))(box(d3(_0)(_9)(_3)));
+        })(nil)(xs))(char(_0)(_9)(_3)));
     };
 }
 
 function showNum(n) {
-    return cons(n(succ)(d2(_4)(_8)))(nil);
+    return box(n(succ)(d2(_4)(_8)));
 }
 
 function showMaybe(showR) {
     return function (m) {
-        return maybe(m)(function () {
+        return maybe(m)(function (_) {
             return nil;
         })(function (r) {
             return showR(r);
@@ -524,11 +510,9 @@ function showTree(show) {
 // encode/decode /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 function decode(empty) {
     return function (append) {
-        return function (toNumber) {
+        return function (reader) {
             return function (y) {
-                return foldl(append)(empty)(map(function (x) {
-                    return toNumber(x);
-                })(y));
+                return foldl(append)(empty)(map(reader)(y));
             };
         };
     };
@@ -672,14 +656,3 @@ console.log("Caesar cipher:");
 interactive(function (x) {
     return concat6(x)(char(_0)(_3)(_2))(char(_0)(_6)(_1))(char(_0)(_6)(_2))(char(_0)(_3)(_2))(map(succ)(x));
 }, "Hello,World");
-
-function f(x) {
-    return function (y) {
-        return y;
-    };
-}
-
-var c = $false;
-
-console.log(c(10)(20));// c ? 10 : 20 と考える。20が出力される
-

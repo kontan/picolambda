@@ -74,7 +74,7 @@ assert("right true",        "true",             showEither(showNum)(showBoolean)
 assert("tree",              "<1,<<2,3>,4>>",    showTree(showNum)(  branch(leaf(_1))(branch(branch(leaf(_2))(leaf(_3)))(leaf(_4)))   ));
 
 assert("foldl",             "9",                showNum(    foldl(add)(_2)(cons(_3)(cons(_4)(nil))                          )));
-assert("unfoldr",           "[9,8,7,6,5,4,3,2,1,]", showList(showNum)(   unfoldr (x=>$if(isZero(x))(_=>nothing)(_=>just(tuple(x)(pred(x))))) (_9)    ));
+assert("unfoldr",           "[9,8,7,6,5,4,3,2,1,]", showList(showNum)(   unfoldr ( (x: Natural) =>$if(isZero(x))(_=>nothing)(_=>just(tuple(x)(pred(x))))) (_9)    ));
 
 assert("Hello,World", "Hello,world!",
     cons(d3(_0)(_7)(_2) )( // H
@@ -93,7 +93,7 @@ assert("Hello,World", "Hello,world!",
     )))))))))))
 ));
 
-var fact = f=> n => (n == 0) ? 1 : n * f (n-1);
+var fact = (f: (x: number)=>number) => (n: number) => (n == 0) ? 1 : n * f (n-1);
 console.log("y factorial 10: " + y(fact)(10));
 
 console.log("Echo: ");
@@ -101,7 +101,7 @@ interactive(unit, "Hello,World");
 
 
 console.log("Caesar cipher:");
-interactive(x=>concat6 
+interactive((x:Str)=>concat6 
     (x)                     // plain text
     (char(_0)(_3)(_2))      // " "
     (char(_0)(_6)(_1))      // "="
@@ -109,8 +109,6 @@ interactive(x=>concat6
     (char(_0)(_3)(_2))      // " "
     (map(succ)(x))          // encrypted text
 , "Hello,World");
-
-
 
 
 

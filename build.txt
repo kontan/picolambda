@@ -1,1 +1,1 @@
---out test.js lib.ts env.ts test.ts
+--noImplicitAny --out test.js lib.ts env.ts test.ts
